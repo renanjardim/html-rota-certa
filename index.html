@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rota Certa - Entregas Inteligentes</title>
+    
+    <!-- Carrega as bibliotecas React e Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- URL DA API ---
+        const API_URL = 'https://back-end-rota-certa.vercel.app/'; 
+
+        // --- ESTILOS CSS ---
+        const styles = `
+          .container {
+            font-family: sans-serif; margin: 0; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh;
+          }
+          .appShell {
+            max-width: 420px; width: 100%; height: 800px; margin: auto; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative;
+          }
+          .screenContainer {
+            flex: 1; padding: 20px; text-align: center; overflow-y: auto; display: flex; flex-direction: column;
+          }
+          .title {
+            font-size: 26px; font-weight: bold; color: #1A202C; margin-bottom: 8px; margin-top: 10px; text-align: left;
+          }
+          .subtitle {
+            font-size: 16px; color: #718096; margin-bottom: 30px; text-align: left;
+          }
+          .input {
+            width: 100%; height: 50px; background-color: #f7fafc; border-radius: 8px; padding: 0 15px; font-size: 16px; border: 1px solid #E2E8F0; margin-bottom: 15px; box-sizing: border-box; text-align: left;
+          }
+          .button {
+            width: 100%; height: 50px; background-color: #2C5282; border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-top: 10px; color: #fff; font-size: 18px; font-weight: bold; border: none; cursor: pointer;
+          }
+          .button.secondary { background-color: #4A5568; }
+          .button.danger { background-color: #E53E3E; }
+          .button:disabled { background-color: #a0aec0; cursor: not-allowed; }
+          .linkText {
+            color: #2C5282; margin-top: 20px; font-size: 16px; cursor: pointer; background: none; border: none;
+          }
+          .form-group { text-align: left; margin-bottom: 15px; }
+          .label { font-weight: bold; margin-bottom: 5px; display: block; color: #4A5568; }
+          .section-title { font-size: 20px; color: #1A202C; text-align: left; border-bottom: 2px solid #edf2f7; padding-bottom: 5px; margin-top: 30px;}
+          .success-icon { color: #48BB78; width: 80px; height: 80px; margin-bottom: 20px; }
+          .profile-checkbox-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
+          .checkbox-label { display: flex; align-items: center; cursor: pointer; }
+          .checkbox-label input { margin-right: 10px; }
+          .dimension-inputs { display: flex; gap: 10px; }
+          .dimension-inputs .input { width: 100%; }
+          .insurance-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
+          .price-result { background-color: #edf2f7; padding: 15px; border-radius: 8px; text-align: left; margin-top: 20px; }
+          .price-result p { margin: 5px 0; }
+          .price-result h3 { margin-top: 10px; color: #2C5282; }
+          .divider { display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; }
+          .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
+          .socialButton { 
+            width: 100%; height: 50px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 16px; font-weight: bold; border: 1px solid #e2e8f0; cursor: pointer; background-color: #fff; margin-bottom: 10px; gap: 10px;
+          }
+          .bottom-nav { display: flex; border-top: 1px solid #e2e8f0; background-color: #fff; }
+          .nav-button { flex: 1; background: none; border: none; padding: 15px 0; cursor: pointer; color: #718096; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; }
+          .nav-button.active { color: #2C5282; font-weight: bold; }
+          .delivery-list { list-style: none; padding: 0; text-align: left; margin-top: 20px; }
+          .delivery-item { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 10px; cursor: pointer; transition: background-color 0.2s; display: flex; gap: 15px; }
+          .delivery-item:hover { background-color: #edf2f7; }
+          .delivery-item-img { width: 60px; height: 60px; border-radius: 8px; background-color: #e2e8f0; object-fit: cover; }
+          .delivery-item-info { flex: 1; }
+          .delivery-item h4 { margin: 0 0 5px 0; color: #2C5282;}
+          .delivery-item p { margin: 2px 0; font-size: 14px; color: #4A5568; }
+          .wallet-card { background: linear-gradient(135deg, #2C5282 0%, #4A5568 100%); color: white; padding: 20px; border-radius: 12px; text-align: left; margin-bottom: 20px;}
+          .wallet-card .balance-label { font-size: 16px; opacity: 0.8; }
+          .wallet-card .balance-amount { font-size: 36px; font-weight: bold; margin: 5px 0 20px 0; }
+          .wallet-actions { display: flex; gap: 15px; }
+          .faq-item { text-align: left; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+          .faq-item h4 { margin: 0 0 5px 0; }
+          .textarea { width: 100%; min-height: 80px; background-color: #f7fafc; border-radius: 8px; padding: 10px 15px; font-size: 16px; border: 1px solid #E2E8F0; margin-bottom: 15px; box-sizing: border-box; text-align: left; }
+          .chat-box { flex-grow: 1; display: flex; flex-direction: column; width: 100%; }
+          .chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; text-align: left;}
+          .message { margin-bottom: 10px; padding: 8px 12px; border-radius: 15px; max-width: 80%; }
+          .message.user { background-color: #2C5282; color: white; align-self: flex-end; margin-left: auto; }
+          .message.ia { background-color: #edf2f7; color: #2d3748; align-self: flex-start; }
+          .chat-input-area { display: flex; gap: 10px; }
+          .profile-selection-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;}
+          .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+          .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+          .map-placeholder { width: 100%; height: 200px; background-color: #e2e8f0; border-radius: 8px; display: flex; justify-content: center; align-items: center; color: #718096; font-style: italic; margin: 15px 0; }
+          .signature-pad { width: 100%; height: 150px; background-color: #edf2f7; border: 2px dashed #cbd5e0; border-radius: 8px; margin-top: 10px; }
+        `;
+
+        // --- ÍCONES SVG ---
+        const EnvioIcon = ({isActive}) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? "#2C5282" : "#718096"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="18" x2="18.01" y1="16" y2="16"/></svg>);
+        const CarteiraIcon = ({isActive}) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? "#2C5282" : "#718096"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4Z"/><path d="M4 6v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6"/><path d="M18 12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Z"/></svg>);
+        const AjudaIcon = ({isActive}) => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? "#2C5282" : "#718096"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>);
+        const SuccessIcon = () => (<svg className="success-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>);
+        const GoogleIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.35,11.1H12.18V13.83H18.67C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,5 12,5C14.5,5 16.22,6.17 17.17,7.09L19.34,5C17.22,3.03 14.81,2 12,2C6.42,2 2.03,6.8 2,12C2,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.33C21.5,11.76 21.43,11.43 21.35,11.1Z"/></svg>);
+        const AppleIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#000000" d="M19.3,12.15C19.3,10.63 18.84,9.2 18,8C17.27,7 16.14,6.44 14.8,6.44C13,6.44 11.6,7.4 10.81,7.4C10,7.4 8.86,6.65 7.6,6.65C6,6.65 4.69,7.38 3.88,8.55C2.1,10.8 2.5,14.65 4.25,17.35C5.12,18.75 6.2,20.05 7.5,20.05C8.75,20.05 9.35,19.35 11.13,19.35C12.91,19.35 13.45,20.05 14.8,20.05C16.15,20.05 17.19,18.8 18,17.5C18.86,16.15 19.1,14.55 19.1,14.5C19.1,14.5 19.3,12.15 19.3,12.15M13.5,5.25C14.25,4.45 15.25,3.95 16.2,3.95C16.3,5.55 15.4,6.85 14.65,7.65C13.9,8.45 12.85,9 11.9,9C11.8,7.35 12.7,6.05 13.5,5.25"/></svg>);
+        
+        // --- Componentes de Telas Individuais ---
+
+        const LoginScreen = ({ onLoginSuccess, onNavigateToRegister }) => {
+            const [email, setEmail] = useState('');
+            const [senha, setSenha] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleLogin = async () => {
+                setIsLoading(true);
+                try {
+                    const response = await fetch(`${API_URL}auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, senha }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) { throw new Error(data.message || 'Credenciais inválidas.'); }
+                    onLoginSuccess(data.userId, data.perfis);
+                } catch (error) {
+                    alert(`Falha no Login: ${error.message}`);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            const handleSocialLogin = (provider) => {
+                setIsLoading(true);
+                setTimeout(() => {
+                    onLoginSuccess('user_social_123', ['vendedor']);
+                    setIsLoading(false);
+                }, 1500);
+            };
+
+            return (
+                <div className="screenContainer">
+                    <h1 className="title" style={{textAlign: 'center'}}>Bem-vindo ao Rota Certa</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>Entregas Inteligentes</p>
+                    <button className="socialButton" onClick={() => handleSocialLogin('Google')}><GoogleIcon /> Entrar com Google</button>
+                    <button className="socialButton" onClick={() => handleSocialLogin('Apple')}><AppleIcon /> Entrar com Apple</button>
+                    <div className="divider">OU</div>
+                    <input className="input" type="email" placeholder="Seu e-mail (ex: duplo@email.com)" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input className="input" type="password" placeholder="Sua senha" value={senha} onChange={(e) => setSenha(e.target.value)} />
+                    <button className="button" onClick={handleLogin} disabled={isLoading}>{isLoading ? 'A entrar...' : 'Entrar com e-mail'}</button>
+                    <button onClick={onNavigateToRegister} className="linkText">Ainda não tem conta? Registe-se</button>
+                </div>
+            );
+        };
+
+        const RegisterScreen = ({ onRegisterSuccess, onNavigateToLogin }) => {
+            const [nomeCompleto, setNomeCompleto] = useState('');
+            const [email, setEmail] = useState('');
+            const [senha, setSenha] = useState('');
+            const [perfis, setPerfis] = useState(['vendedor']);
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleProfileChange = (perfil) => {
+                setPerfis(prev => prev.includes(perfil) ? prev.filter(p => p !== perfil) : [...prev, perfil]);
+            };
+
+            const handleRegister = async () => {
+                if (!nomeCompleto || !email || !senha || perfis.length === 0) {
+                    alert('Erro: Preencha todos os campos e selecione um perfil.');
+                    return;
+                }
+                setIsLoading(true);
+                try {
+                    const response = await fetch(`${API_URL}auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nomeCompleto, email, senha, perfis }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) { throw new Error(data.message || 'Não foi possível registar.'); }
+                    onRegisterSuccess(data.userId, data.perfis);
+                } catch (error) {
+                    alert(`Falha no Registo: ${error.message}`);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            return (
+                <div className="screenContainer">
+                    <h1 className="title" style={{textAlign: 'center'}}>Crie a sua Conta</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>É rápido e fácil.</p>
+                    <input className="input" placeholder="Nome completo" value={nomeCompleto} onChange={(e) => setNomeCompleto(e.target.value)} />
+                    <input className="input" type="email" placeholder="O seu e-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input className="input" type="password" placeholder="Crie uma palavra-passe" value={senha} onChange={(e) => setSenha(e.target.value)} />
+                    <div className="form-group">
+                        <label className="label">Qual o seu perfil? (Pode escolher ambos)</label>
+                        <div className="profile-checkbox-group">
+                            <label className="checkbox-label"><input type="checkbox" checked={perfis.includes('vendedor')} onChange={() => handleProfileChange('vendedor')} />Sou Vendedor</label>
+                            <label className="checkbox-label"><input type="checkbox" checked={perfis.includes('entregador')} onChange={() => handleProfileChange('entregador')} />Sou Entregador</label>
+                        </div>
+                    </div>
+                    <button className="button" onClick={handleRegister} disabled={isLoading}>{isLoading ? 'A registar...' : 'Próximo'}</button>
+                    <button onClick={onNavigateToLogin} className="linkText">Já tem uma conta? Inicie sessão</button>
+                </div>
+            );
+        };
+        
+        const DocumentUploadScreen = ({ onComplete }) => {
+            const [doc, setDoc] = useState('');
+            const [selfie, setSelfie] = useState('');
+            const [isPJ, setIsPJ] = useState(false);
+            const [cnpjDoc, setCnpjDoc] = useState('');
+        
+            return (
+                <div className="screenContainer">
+                    <h1 className="title" style={{textAlign: 'center'}}>Verificação de Documentos</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>Para sua segurança, precisamos de alguns documentos.</p>
+                    <div className="form-group">
+                        <label className="label">RG ou CNH (Frente e Verso)</label>
+                        <div className="upload-btn-wrapper">
+                            <button className="button secondary">{doc ? `Enviado: ${doc}` : '📄 Enviar Documento'}</button>
+                            <input type="file" onChange={(e) => setDoc(e.target.files[0].name)} />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label className="label">Selfie segurando o seu documento</label>
+                        <div className="upload-btn-wrapper">
+                            <button className="button secondary">{selfie ? `Enviada: ${selfie}` : '🤳 Enviar Selfie'}</button>
+                            <input type="file" onChange={(e) => setSelfie(e.target.files[0].name)} />
+                        </div>
+                    </div>
+                    <div className="divider"></div>
+                    <div className="form-group">
+                        <label className="checkbox-label">
+                            <input type="checkbox" checked={isPJ} onChange={() => setIsPJ(!isPJ)} />
+                            Quero cadastrar-me como Pessoa Jurídica (Opcional)
+                        </label>
+                    </div>
+                    {isPJ && (
+                        <div className="form-group">
+                            <label className="label">Cartão CNPJ</label>
+                            <div className="upload-btn-wrapper">
+                                <button className="button secondary">{cnpjDoc ? `Enviado: ${cnpjDoc}` : '📄 Enviar Cartão CNPJ'}</button>
+                                <input type="file" onChange={(e) => setCnpjDoc(e.target.files[0].name)} />
+                            </div>
+                        </div>
+                    )}
+                    <button className="button" onClick={onComplete}>Próximo</button>
+                </div>
+            );
+        };
+        
+        const PixKeyScreen = ({ onComplete }) => {
+             const [pixKey, setPixKey] = useState('');
+             return (
+                <div className="screenContainer">
+                    <h1 className="title" style={{textAlign: 'center'}}>Chave PIX</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>Informe a sua chave PIX para receber os pagamentos.</p>
+                    <input className="input" placeholder="Digite sua chave PIX (CPF, e-mail, etc.)" value={pixKey} onChange={(e) => setPixKey(e.target.value)} />
+                    <button className="button" onClick={onComplete}>Próximo</button>
+                </div>
+             );
+        };
+
+        const AddressScreen = ({ onComplete }) => {
+            const [cep, setCep] = useState('');
+            const [rua, setRua] = useState('');
+            const [numero, setNumero] = useState('');
+            const [bairro, setBairro] = useState('');
+            const [cidade, setCidade] = useState('');
+            const [estado, setEstado] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleCepLookup = async () => {
+                const cepLimpo = cep.replace(/\D/g, '');
+                if (cepLimpo.length !== 8) {
+                    alert('Por favor, digite um CEP válido com 8 dígitos.');
+                    return;
+                }
+                setIsLoading(true);
+                try {
+                    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+                    const data = await response.json();
+                    if (data.erro) {
+                        throw new Error('CEP não encontrado.');
+                    }
+                    setRua(data.logradouro);
+                    setBairro(data.bairro);
+                    setCidade(data.localidade);
+                    setEstado(data.uf);
+                } catch (error) {
+                    alert(`Erro ao buscar CEP: ${error.message}`);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div className="screenContainer">
+                    <h1 className="title" style={{textAlign: 'center'}}>Endereço Principal</h1>
+                    <div className="form-group">
+                        <label className="label" htmlFor="cep">CEP</label>
+                        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                            <input id="cep" className="input" style={{flex: 1, marginBottom: 0}} placeholder="Apenas números" value={cep} onChange={e => setCep(e.target.value)} maxLength="8" />
+                            <button className="button secondary" style={{width: '120px', height: '50px', margin: 0}} onClick={handleCepLookup} disabled={isLoading}>
+                                {isLoading ? '...' : 'Buscar'}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label className="label" htmlFor="rua">Rua</label>
+                        <input id="rua" className="input" value={rua} onChange={e => setRua(e.target.value)} />
+                    </div>
+                    <div style={{display: 'flex', gap: '10px'}}>
+                        <div className="form-group" style={{flex: 1}}>
+                            <label className="label" htmlFor="numero">Número</label>
+                            <input id="numero" className="input" value={numero} onChange={e => setNumero(e.target.value)} />
+                        </div>
+                        <div className="form-group" style={{flex: 1}}>
+                            <label className="label" htmlFor="complemento">Complemento</label>
+                            <input id="complemento" className="input" />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label className="label" htmlFor="bairro">Bairro</label>
+                        <input id="bairro" className="input" value={bairro} onChange={e => setBairro(e.target.value)} />
+                    </div>
+                     <div className="form-group">
+                        <label className="label" htmlFor="cidade">Cidade</label>
+                        <input id="cidade" className="input" value={cidade} onChange={e => setCidade(e.target.value)} />
+                    </div>
+                     <div className="form-group">
+                        <label className="label" htmlFor="estado">Estado</label>
+                        <input id="estado" className="input" value={estado} onChange={e => setEstado(e.target.value)} />
+                    </div>
+                    <button className="button" onClick={onComplete} disabled={isLoading}>
+                        Salvar e Continuar
+                    </button>
+                </div>
+            );
+        };
+
+        const VehicleScreen = ({ onComplete }) => {
+            const [modelo, setModelo] = useState('');
+            const [placa, setPlaca] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [fileName, setFileName] = useState('');
+
+            const handleFileChange = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setFileName(file.name);
+                setIsLoading(true);
+                alert("Analisando documento com IA... Por favor, aguarde.");
+                setTimeout(() => {
+                    setModelo('Honda Civic');
+                    setPlaca('BRA2E19');
+                    setIsLoading(false);
+                    alert("Dados do veículo preenchidos com sucesso!");
+                }, 3000);
+            };
+
+            return (
+                <div className="screenContainer">
+                    <h1 className="title" style={{textAlign: 'center'}}>Dados do Veículo</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>Envie o CRLV para preenchimento automático.</p>
+                    <div className="form-group">
+                         <div className="upload-btn-wrapper">
+                            <button className="button secondary">
+                                {isLoading ? 'Analisando...' : (fileName || '📄 Enviar CRLV do Veículo')}
+                            </button>
+                            <input type="file" name="myfile" onChange={handleFileChange} disabled={isLoading} />
+                        </div>
+                    </div>
+                    <div className="divider">OU PREENCHA MANUALMENTE</div>
+                    <div className="form-group">
+                        <label className="label" htmlFor="modelo">Modelo</label>
+                        <input id="modelo" className="input" placeholder="Ex: Fiat Uno" value={modelo} onChange={e => setModelo(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <label className="label" htmlFor="placa">Placa</label>
+                        <input id="placa" className="input" placeholder="Ex: ABC-1234" value={placa} onChange={e => setPlaca(e.target.value)} />
+                    </div>
+                    <button className="button" onClick={onComplete} disabled={isLoading}>
+                        {isLoading ? 'Aguarde...' : 'Salvar Veículo'}
+                    </button>
+                </div>
+            );
+        };
+
+        const RegistrationSuccessScreen = ({ onNavigateToLogin }) => {
+            useEffect(() => {
+                const timer = setTimeout(() => onNavigateToLogin(), 3000);
+                return () => clearTimeout(timer);
+            }, [onNavigateToLogin]);
+
+            return (
+                <div className="screenContainer" style={{justifyContent: 'center', alignItems: 'center'}}>
+                    <SuccessIcon />
+                    <h1 className="title" style={{textAlign: 'center'}}>Registo Concluído!</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>O seu perfil está pronto. A redirecionar...</p>
+                </div>
+            );
+        };
+
+        const VendedorDashboard = ({ userId, onSwitchProfile, onViewTracking }) => {
+            const [origem, setOrigem] = useState('');
+            const [destino, setDestino] = useState('');
+            const [peso, setPeso] = useState(1);
+            const [altura, setAltura] = useState(10);
+            const [largura, setLargura] = useState(10);
+            const [comprimento, setComprimento] = useState(10);
+            const [comSeguro, setComSeguro] = useState(false);
+            const [valorDeclarado, setValorDeclarado] = useState('');
+            const [meusEnvios, setMeusEnvios] = useState([
+                { id: 'envio1', destino: { enderecoCompleto: 'Av. Paulista, 1000' }, status: 'aguardando_entregador' },
+                { id: 'envio2', destino: { enderecoCompleto: 'Rua Augusta, 500' }, status: 'em_transito', entregador: { nome: 'Carlos Souza', veiculo: 'ABC-1234' } },
+                { id: 'envio3', destino: { enderecoCompleto: 'Praça da Sé, s/n' }, status: 'em_devolucao' },
+            ]);
+            const [isLoading, setIsLoading] = useState(false);
+            const [precoCalculado, setPrecoCalculado] = useState(null);
+
+            const handleSimulateAI = () => {
+                alert("Análise por IA simulada! A preencher dados...");
+                setPeso((Math.random() * 5 + 0.5).toFixed(2));
+                setAltura(Math.floor(Math.random() * 30 + 10));
+                setLargura(Math.floor(Math.random() * 30 + 10));
+                setComprimento(Math.floor(Math.random() * 30 + 10));
+            };
+
+            const handleCalculate = () => {
+                if (!origem || !destino) {
+                    alert("Por favor, preencha os endereços de origem e destino.");
+                    return;
+                }
+                setIsLoading(true);
+                setTimeout(() => {
+                    const distancia = Math.floor(Math.random() * 500 + 10);
+                    const pesoVolumetrico = (altura * largura * comprimento) / 6000;
+                    const pesoConsiderado = Math.max(peso, pesoVolumetrico);
+                    const frete = 5 + (distancia * 0.15) + (pesoConsiderado * 0.5);
+                    const valorSeguro = comSeguro ? parseFloat(valorDeclarado) * 0.015 : 0;
+                    const total = frete + valorSeguro;
+                    setPrecoCalculado({ frete, valorSeguro, total, distancia });
+                    setIsLoading(false);
+                }, 1000);
+            };
+
+            const handleCreateDelivery = async () => {
+                setIsLoading(true);
+                setTimeout(() => {
+                     alert('Entrega publicada com sucesso!');
+                     setMeusEnvios(prev => [...prev, {id: Date.now(), destino: {enderecoCompleto: destino}, status: 'aguardando_entregador'}]);
+                     setOrigem(''); setDestino(''); setPrecoCalculado(null);
+                     setIsLoading(false);
+                }, 1000);
+            };
+
+            return (
+                <div>
+                    {onSwitchProfile && <button className="linkText" onClick={onSwitchProfile} style={{float: 'right'}}>Trocar Perfil</button>}
+                    <h2 className="section-title">Criar Novo Envio</h2>
+                    <div className="form-group">
+                        <label className="label">Análise da Encomenda por IA</label>
+                        <button className="button secondary" onClick={handleSimulateAI}>📸 Enviar Foto (Simular IA)</button>
+                    </div>
+                    <div className="form-group">
+                        <label className="label">Dimensões (cm) e Peso (kg)</label>
+                        <div className="dimension-inputs">
+                            <input className="input" placeholder="A" value={altura} onChange={e => setAltura(e.target.value)} />
+                            <input className="input" placeholder="L" value={largura} onChange={e => setLargura(e.target.value)} />
+                            <input className="input" placeholder="C" value={comprimento} onChange={e => setComprimento(e.target.value)} />
+                            <input className="input" placeholder="kg" value={peso} onChange={e => setPeso(e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label className="label" htmlFor="origem">Endereço de Recolha (Origem)</label>
+                        <input id="origem" className="input" placeholder="Rua, número, cidade..." value={origem} onChange={(e) => setOrigem(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <label className="label" htmlFor="destino">Endereço de Entrega (Destino)</label>
+                        <input id="destino" className="input" placeholder="Rua, número, cidade..." value={destino} onChange={(e) => setDestino(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                         <div className="insurance-group">
+                            <input type="checkbox" id="seguro" checked={comSeguro} onChange={(e) => setComSeguro(e.target.checked)} />
+                            <label htmlFor="seguro">Contratar seguro para a carga</label>
+                        </div>
+                        {comSeguro && (
+                            <input className="input" placeholder="Valor Declarado da Mercadoria (R$)" value={valorDeclarado} onChange={(e) => setValorDeclarado(e.target.value)} type="number" />
+                        )}
+                    </div>
+                    {!precoCalculado && (
+                        <button className="button" onClick={handleCalculate} disabled={isLoading}>{isLoading ? 'A calcular...' : 'Calcular Frete'}</button>
+                    )}
+                    {precoCalculado && (
+                        <div className="price-result">
+                            <p>Distância: <strong>{precoCalculado.distancia} km</strong></p>
+                            <p>Frete: <strong>R$ {precoCalculado.frete.toFixed(2)}</strong></p>
+                            <p>Seguro: <strong>R$ {precoCalculado.valorSeguro.toFixed(2)}</strong></p>
+                            <h3>Total: <strong>R$ {precoCalculado.total.toFixed(2)}</strong></h3>
+                            <button className="button" onClick={handleCreateDelivery} disabled={isLoading} style={{marginTop: '15px'}}>{isLoading ? 'A publicar...' : 'Publicar Entrega'}</button>
+                        </div>
+                    )}
+                    <h2 className="section-title">Os Meus Envios</h2>
+                    <ul className="delivery-list">
+                        {meusEnvios.map((envio) => (
+                            <li key={envio.id} className="delivery-item" onClick={() => (envio.status === 'em_transito' || envio.status === 'em_devolucao') && onViewTracking(envio)}>
+                                 <img src="https://placehold.co/60x60/2C5282/FFFFFF?text=Caixa" alt="pacote" className="delivery-item-img" />
+                                <div className="delivery-item-info">
+                                     <h4>Para: {envio.destino.enderecoCompleto}</h4>
+                                    <p>Status: <span style={{fontWeight: 'bold', color: envio.status === 'em_transito' ? '#2C5282' : (envio.status === 'em_devolucao' ? '#E53E3E' : '#F6AD55')}}>{envio.status.replace(/_/g, ' ').toUpperCase()}</span></p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        };
+
+        const DeliveryDetailScreen = ({ delivery, onAccept, onBack }) => {
+            return (
+                <div>
+                    <button className="linkText" onClick={onBack} style={{alignSelf: 'flex-start', paddingLeft: 0, marginTop: 0}}>← Voltar para a lista</button>
+                    <h1 className="title">{delivery.origem.enderecoCompleto}</h1>
+                    <p className="subtitle">Para: {delivery.destino.enderecoCompleto}</p>
+                    <img src={delivery.imagemUrl} alt="pacote" style={{width: '100%', height: '150px', borderRadius: '8px', objectFit: 'cover', marginBottom: '15px'}}/>
+                    <div className="map-placeholder">Simulação do Mapa da Rota</div>
+                    <div style={{textAlign: 'left'}}>
+                        <p><strong>Seu Ganho:</strong> R$ {delivery.valores.ganhoEntregador.toFixed(2)}</p>
+                        <p><strong>Distância da Coleta:</strong> 3 km (estimado)</p>
+                        <p><strong>Distância Total:</strong> {delivery.rota.distanciaKm} km</p>
+                        <p><strong>Pacote:</strong> {delivery.pacote.peso} - {delivery.pacote.dimensoes}</p>
+                    </div>
+                    <button className="button" onClick={() => onAccept(delivery)} style={{marginTop: '30px'}}>Aceitar Entrega</button>
+                </div>
+            );
+        };
+
+        const ReportProblemScreen = ({ onReport, onBack }) => {
+            const reasons = ["Cliente ausente", "Endereço não encontrado", "Pedido recusado pelo cliente", "Problema de acesso", "Outro"];
+            return (
+                <div>
+                    <button className="linkText" onClick={onBack} style={{alignSelf: 'flex-start', paddingLeft: 0, marginTop: 0}}>← Voltar</button>
+                    <h1 className="title">Reportar um Problema</h1>
+                    <p className="subtitle">Selecione o motivo da falha na entrega.</p>
+                    {reasons.map(reason => (
+                        <button key={reason} className="button secondary" style={{marginBottom: '10px'}} onClick={() => onReport(reason)}>
+                            {reason}
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+
+        const ProofOfDeliveryScreen = ({ onComplete, onBack }) => {
+            return (
+                <div>
+                    <button className="linkText" onClick={onBack} style={{alignSelf: 'flex-start', paddingLeft: 0, marginTop: 0}}>← Voltar</button>
+                    <h1 className="title">Comprovativo de Entrega</h1>
+                    <p className="subtitle">Tire uma foto do pacote no local e peça a assinatura.</p>
+                    <div className="form-group">
+                        <label className="label">Foto da Entrega</label>
+                        <button className="button secondary">📷 Tirar Foto</button>
+                    </div>
+                    <div className="form-group">
+                        <label className="label">Assinatura do Recebedor</label>
+                        <div className="signature-pad"></div>
+                    </div>
+                    <button className="button" onClick={onComplete}>Confirmar Entrega</button>
+                </div>
+            );
+        };
+
+        const DeliveryTrackingScreen = ({ delivery, onComplete, onReportProblem, onBack }) => {
+            return (
+                <div>
+                    <button className="linkText" onClick={onBack} style={{alignSelf: 'flex-start', paddingLeft: 0, marginTop: 0}}>← Ver minhas entregas</button>
+                    <h1 className="title">Realizar Entrega</h1>
+                    <p className="subtitle">Destino: {delivery.destino.enderecoCompleto}</p>
+                    <div className="map-placeholder">Simulação de Navegação em Tempo Real</div>
+                    <button className="button" onClick={onComplete}>Finalizar Entrega</button>
+                    <button className="button danger" onClick={onReportProblem} style={{marginTop: '15px'}}>Reportar Problema</button>
+                </div>
+            );
+        };
+
+        const SellerTrackingScreen = ({ delivery, onBack }) => {
+             return (
+                <div>
+                    <button className="linkText" onClick={onBack} style={{alignSelf: 'flex-start', paddingLeft: 0, marginTop: 0}}>← Voltar para meus envios</button>
+                    <h1 className="title">Acompanhar Entrega</h1>
+                    <p className="subtitle">Destino: {delivery.destino.enderecoCompleto}</p>
+                    <div className="map-placeholder">Localização do entregador em tempo real</div>
+                    <div style={{textAlign: 'left', marginTop: '20px'}}>
+                        <p>Status: <strong>EM TRÂNSITO</strong></p>
+                        <p>Entregador: <strong>{delivery.entregador.nome}</strong></p>
+                        <p>Veículo: <strong>{delivery.entregador.veiculo}</strong></p>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const EntregadorDashboard = ({ userId, onSwitchProfile }) => {
+            const [driverScreen, setDriverScreen] = useState('define_route');
+            const [availableDeliveries, setAvailableDeliveries] = useState([]);
+            const [selectedDelivery, setSelectedDelivery] = useState(null);
+            const [activeDelivery, setActiveDelivery] = useState(null);
+
+            const handleFindDeliveries = () => {
+                setAvailableDeliveries([
+                    { id: 'entrega1', imagemUrl: 'https://placehold.co/60x60/e2e8f0/718096?text=Caixa', origem: { enderecoCompleto: 'Rua das Flores, 123, São Paulo' }, destino: { enderecoCompleto: 'Av. Paulista, 1000, São Paulo' }, valores: { ganhoEntregador: 18.50 }, rota: { distanciaKm: 12 }, desvioKm: 2, pacote: { peso: '1.2kg', dimensoes: '10x20x30cm' } },
+                    { id: 'entrega2', imagemUrl: 'https://placehold.co/60x60/e2e8f0/718096?text=Env', origem: { enderecoCompleto: 'Rua das Laranjeiras, 45, Rio de Janeiro' }, destino: { enderecoCompleto: 'Praia de Copacabana, 900, Rio de Janeiro' }, valores: { ganhoEntregador: 22.00 }, rota: { distanciaKm: 8 }, desvioKm: 1.5, pacote: { peso: '0.5kg', dimensoes: '30x25x2cm' } },
+                ]);
+                setDriverScreen('feed');
+            };
+            
+            const handleAcceptDelivery = (delivery) => {
+                setActiveDelivery(delivery);
+                setSelectedDelivery(null);
+            };
+
+            const handleCompleteDelivery = () => {
+                alert("Fluxo da entrega ativa finalizado!");
+                setActiveDelivery(null);
+            };
+            
+            const handleReportProblem = () => {
+                setDriverScreen('report_problem');
+            };
+            
+            const handleFinishReport = (reason) => {
+                alert(`Problema reportado: ${reason}. A entrega foi movida para devolução.`);
+                setActiveDelivery(null);
+                setDriverScreen('feed');
+            };
+            
+            const handleProofOfDelivery = () => {
+                setDriverScreen('proof_of_delivery');
+            };
+            
+            const handleFinishProof = () => {
+                alert("Comprovativo enviado com sucesso!");
+                setActiveDelivery(null);
+                setDriverScreen('feed');
+            }
+
+            if(driverScreen === 'proof_of_delivery') {
+                return <ProofOfDeliveryScreen onComplete={handleFinishProof} onBack={() => setActiveDelivery(activeDelivery)} />
+            }
+            
+            if(driverScreen === 'report_problem') {
+                return <ReportProblemScreen onReport={handleFinishReport} onBack={() => setActiveDelivery(activeDelivery)} />
+            }
+
+            if (activeDelivery) {
+                return <DeliveryTrackingScreen delivery={activeDelivery} onComplete={handleProofOfDelivery} onReportProblem={handleReportProblem} onBack={() => setActiveDelivery(null)} />;
+            }
+            
+            if (selectedDelivery) {
+                return <DeliveryDetailScreen delivery={selectedDelivery} onAccept={handleAcceptDelivery} onBack={() => setSelectedDelivery(null)} />;
+            }
+
+            return(
+                 <div>
+                    {onSwitchProfile && <button className="linkText" onClick={onSwitchProfile} style={{float: 'right'}}>Trocar Perfil</button>}
+                    <h1 className="title">Painel do Entregador</h1>
+
+                    {driverScreen === 'define_route' && (
+                        <div>
+                            <p className="subtitle">Informe o seu trajeto para encontrar entregas.</p>
+                            <div className="form-group">
+                                <label className="label">Ponto de Partida</label>
+                                <input className="input" placeholder="Digite o seu endereço de partida..." />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Destino Final</label>
+                                <input className="input" placeholder="Digite o seu endereço de destino..." />
+                            </div>
+                            <button className="button" onClick={handleFindDeliveries}>Encontrar Entregas</button>
+                        </div>
+                    )}
+                    
+                    {driverScreen === 'feed' && (
+                        <div>
+                            <p className="subtitle">Encontramos estas entregas na sua rota.</p>
+                            <button className="linkText" onClick={() => setDriverScreen('define_route')}>Alterar Rota</button>
+                             <ul className="delivery-list">
+                                {availableDeliveries.map(d => (
+                                    <li key={d.id} className="delivery-item" onClick={() => setSelectedDelivery(d)}>
+                                        <img src={d.imagemUrl} alt="pacote" className="delivery-item-img" />
+                                        <div className="delivery-item-info">
+                                            <h4>Para: {d.destino.enderecoCompleto}</h4>
+                                            <p><strong>Seu Ganho: R$ {d.valores.ganhoEntregador.toFixed(2)}</strong></p>
+                                            <p>Desvio da sua rota: {d.desvioKm} km</p>
+                                            <p>Pacote: {d.pacote.peso} - {d.pacote.dimensoes}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const CarteiraScreen = ({ userId }) => {
+            const [modal, setModal] = useState(null);
+            
+            const renderModal = () => {
+                if (!modal) return null;
+                return (
+                    <div style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent:'center', alignItems:'center'}}>
+                        <div style={{background: 'white', padding: '20px', borderRadius: '8px', width: '90%'}}>
+                            {modal === 'add' && (
+                                <React.Fragment>
+                                    <h2 className="section-title">Adicionar Saldo</h2>
+                                    <input className="input" placeholder="Valor (R$)" type="number" />
+                                    <button className="button" onClick={() => {alert('Saldo adicionado (simulado)!'); setModal(null);}}>Adicionar com PIX</button>
+                                </React.Fragment>
+                            )}
+                             {modal === 'withdraw' && (
+                                <React.Fragment>
+                                    <h2 className="section-title">Sacar Saldo</h2>
+                                    <input className="input" placeholder="Valor (R$)" type="number" />
+                                    <button className="button" onClick={() => {alert('Pedido de saque enviado (simulado)!'); setModal(null);}}>Confirmar Saque</button>
+                                </React.Fragment>
+                            )}
+                            <button className="linkText" onClick={() => setModal(null)}>Cancelar</button>
+                        </div>
+                    </div>
+                )
+            }
+            
+            return (
+                <React.Fragment>
+                    <div>
+                        <h1 className="title" style={{textAlign:'left'}}>A Minha Carteira</h1>
+                        <div className="wallet-card">
+                            <p className="balance-label">Saldo Disponível</p>
+                            <p className="balance-amount">R$ 150,00</p>
+                            <div className="wallet-actions">
+                                <button className="button" style={{flex: 1}} onClick={() => setModal('add')}>Adicionar Saldo</button>
+                                <button className="button secondary" style={{flex: 1}} onClick={() => setModal('withdraw')}>Sacar</button>
+                            </div>
+                        </div>
+                        <h2 className="section-title">Histórico de Transações</h2>
+                    </div>
+                    {renderModal()}
+                </React.Fragment>
+            );
+        };
+
+        const AjudaScreen = ({ userId }) => {
+            const [messages, setMessages] = useState([{ text: "Olá! Como posso ajudar?", from: 'ia' }]);
+            const [input, setInput] = useState('');
+            return (
+                 <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                    <h1 className="title" style={{textAlign:'left'}}>Chat de Suporte</h1>
+                    <p className="subtitle" style={{textAlign:'left'}}>Converse com o nosso assistente de IA.</p>
+                    <div className="chat-box">
+                        <div className="chat-messages">
+                            {messages.map((msg, i) => <div key={i} className={`message ${msg.from}`}>{msg.text}</div>)}
+                        </div>
+                        <div className="chat-input-area">
+                            <input className="input" placeholder="Digite a sua dúvida..." value={input} onChange={e => setInput(e.target.value)} />
+                            <button className="button" style={{width: '100px'}} onClick={() => {
+                                if(!input) return;
+                                setMessages(prev => [...prev, {text: input, from: 'user'}, {text: "Estou a processar...", from: 'ia'}]);
+                                setInput('');
+                            }}>Enviar</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ProfileSelectionScreen = ({ onProfileSelect, onLogout }) => {
+            return (
+                <div className="screenContainer profile-selection-container">
+                    <h1 className="title" style={{textAlign: 'center'}}>Selecione um Perfil</h1>
+                    <p className="subtitle" style={{textAlign: 'center'}}>Como você gostaria de aceder hoje?</p>
+                    <button className="button" onClick={() => onProfileSelect('vendedor')}>
+                        Aceder como Vendedor
+                    </button>
+                    <button className="button secondary" onClick={() => onProfileSelect('entregador')}>
+                        Aceder como Entregador
+                    </button>
+                    <button className="linkText" onClick={onLogout}>Sair</button>
+                </div>
+            );
+        };
+
+
+        // --- Componente Principal da Aplicação ---
+        function App() {
+          const [currentScreen, setCurrentScreen] = useState('login');
+          const [user, setUser] = useState(null); 
+          const [activeTab, setActiveTab] = useState('envios');
+          const [registrationData, setRegistrationData] = useState(null);
+          const [trackingDelivery, setTrackingDelivery] = useState(null);
+
+          const handleLoginSuccess = (id, perfis) => {
+              if (perfis && perfis.length > 1) {
+                setUser({ id, perfis, activeProfile: null });
+            } else {
+                setUser({ id, perfis, activeProfile: perfis ? perfis[0] : 'vendedor' });
+            }
+          };
+          const handleProfileSelect = (perfil) => {
+              setUser(prev => ({ ...prev, activeProfile: perfil }));
+          };
+          const handleLogout = () => { setUser(null); setCurrentScreen('login'); setActiveTab('envios'); };
+          const handleRegisterSuccess = (userId, perfis) => {
+              setRegistrationData({ userId, perfis });
+              setCurrentScreen('register_docs');
+          };
+           const handleDocsComplete = () => {
+              setCurrentScreen('register_pix');
+          };
+          const handlePixComplete = () => {
+               setCurrentScreen('register_address');
+          };
+          const handleAddressComplete = () => {
+              if (registrationData && registrationData.perfis.includes('entregador')) {
+                  setCurrentScreen('register_vehicle');
+              } else {
+                  setCurrentScreen('register_success');
+              }
+          };
+          
+          const handleViewTracking = (delivery) => {
+              setTrackingDelivery(delivery);
+          };
+          const handleCloseTracking = () => {
+              setTrackingDelivery(null);
+          };
+
+
+          const renderScreen = () => {
+            if (user && !user.activeProfile) {
+                return <ProfileSelectionScreen onProfileSelect={handleProfileSelect} onLogout={handleLogout} />;
+            }
+            if (user && user.activeProfile) {
+                if (trackingDelivery && user.activeProfile === 'vendedor') {
+                    return <SellerTrackingScreen delivery={trackingDelivery} onBack={handleCloseTracking} />;
+                }
+                const onSwitchProfile = user.perfis.length > 1 ? () => setUser(prev => ({...prev, activeProfile: null})) : null;
+                return (
+                    <div className="appShell">
+                        <div className="screenContainer">
+                            {(() => {
+                                let MainComponent = user.activeProfile === 'vendedor' ? VendedorDashboard : EntregadorDashboard;
+                                switch(activeTab) {
+                                    case 'envios': return <MainComponent userId={user.id} onSwitchProfile={onSwitchProfile} onViewTracking={handleViewTracking} />;
+                                    case 'carteira': return <CarteiraScreen userId={user.id} />;
+                                    case 'ajuda': return <AjudaScreen userId={user.id} />;
+                                    default: return <MainComponent userId={user.id} onSwitchProfile={onSwitchProfile} onViewTracking={handleViewTracking}/>;
+                                }
+                            })()}
+                        </div>
+                        <div className="bottom-nav">
+                            <button className={`nav-button ${activeTab === 'envios' ? 'active' : ''}`} onClick={() => setActiveTab('envios')}><EnvioIcon isActive={activeTab === 'envios'} /><span>Envios</span></button>
+                            <button className={`nav-button ${activeTab === 'carteira' ? 'active' : ''}`} onClick={() => setActiveTab('carteira')}><CarteiraIcon isActive={activeTab === 'carteira'} /><span>Carteira</span></button>
+                            <button className={`nav-button ${activeTab === 'ajuda' ? 'active' : ''}`} onClick={() => setActiveTab('ajuda')}><AjudaIcon isActive={activeTab === 'ajuda'} /><span>Ajuda</span></button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            switch(currentScreen) {
+              case 'register':
+                return <RegisterScreen onRegisterSuccess={handleRegisterSuccess} onNavigateToLogin={() => setCurrentScreen('login')} />;
+              case 'register_docs':
+                return <DocumentUploadScreen onComplete={handleDocsComplete} />;
+              case 'register_pix':
+                return <PixKeyScreen onComplete={handleAddressComplete} />;
+              case 'register_address':
+                return <AddressScreen onComplete={handleAddressComplete} />;
+              case 'register_vehicle':
+                return <VehicleScreen onComplete={() => setCurrentScreen('register_success')} />;
+              case 'register_success':
+                return <RegistrationSuccessScreen onNavigateToLogin={() => setCurrentScreen('login')} />;
+              case 'login':
+              default:
+                return <LoginScreen onLoginSuccess={handleLoginSuccess} onNavigateToRegister={() => setCurrentScreen('register')} />;
+            }
+          };
+
+          return (
+            <div className="container">
+              <div className="appShell">
+                  <div id="styles"></div>
+                  {renderScreen()}
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // Injeta os estilos no head do documento
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>
+
